@@ -2,6 +2,7 @@ input.onButtonPressed(Button.AB, function on_button_pressed_ab() {
     
     if (calibrated == true) {
         radio.sendValue("Start", 1)
+        started = true
         repCounter = 1
     } else if (repTotalCount > 0) {
         radio.sendValue("Cali", 1)
@@ -36,7 +37,9 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
         idx = 4
         init = true
     } else if (name == "RC") {
-        if (repCounter <= repTotalCount) {
+        basic.showNumber(repCounter)
+        basic.showNumber(value)
+        if (value <= repTotalCount) {
             idx = -1
             if (sn == Nodes_Register[0]) {
                 idx = 0
@@ -65,7 +68,6 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
             //  if all nodes says ok to proceed, go to next rep
             if (proceedToNextRep == true) {
                 repCounter = Nodes_RepCounter_Register[0]
-                basic.showNumber(repCounter)
                 if (nextRepCount <= repTotalCount) {
                     radio.sendValue("RepNo", repCounter)
                 }
@@ -118,6 +120,7 @@ function publishMsg(sn2: number, recvExNo2: number, recvRepNo2: number, recvMsg:
 
 // basic.show_string(transmissionMsg)
 // basic.show_string(topic2)
+let started = false
 let init = false
 let transmissionMsg = ""
 let exerciseNo = 0
@@ -143,8 +146,10 @@ if (ESP8266_IoT.wifiState(true)) {
 basic.forever(function on_forever() {
     
     //  Index ENUM: LH, RH, W, LL, RL
-    if (calibrated == false && Nodes_Register[0] > 0 && Nodes_Register[1] > 0) {
-        // and Nodes_Register[2] > 0 and Nodes_Register[3] > 0 and Nodes_Register[4] > 0:
+    if (started == true) {
+        basic.showNumber(repCounter)
+    } else if (calibrated == false && Nodes_Register[0] > 0 && Nodes_Register[1] > 0) {
+        //  and Nodes_Register[2] > 0 and Nodes_Register[3] > 0 and Nodes_Register[4] > 0:
         calibrated = true
         init = false
     } else if (calibrated == true) {

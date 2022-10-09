@@ -1,7 +1,8 @@
 def on_button_pressed_ab():
-    global repCounter, calibrated, repTotalCount
+    global repCounter, calibrated, repTotalCount, started
     if calibrated == True:
         radio.send_value("Start", 1)
+        started = True
         repCounter = 1
     elif repTotalCount > 0:
         radio.send_value("Cali", 1)
@@ -34,8 +35,9 @@ def on_received_value(name, value):
         idx = 4
         init = True
     elif name == "RC":
-
-        if repCounter <= repTotalCount:
+        basic.show_number(repCounter) 
+        basic.show_number(value)   
+        if value <= repTotalCount:
             idx = -1
             if sn == Nodes_Register[0]:
                 idx = 0
@@ -60,7 +62,6 @@ def on_received_value(name, value):
             # if all nodes says ok to proceed, go to next rep
             if proceedToNextRep == True:
                 repCounter = Nodes_RepCounter_Register[0]
-                basic.show_number(repCounter)
                 if nextRepCount <= repTotalCount:
                     radio.send_value("RepNo", repCounter)
         else:
@@ -101,7 +102,7 @@ def publishMsg(sn2: number, recvExNo2: number, recvRepNo2: number, recvMsg: str,
         basic.show_string("T")
         #basic.show_string(transmissionMsg)
         #basic.show_string(topic2)
-
+started = False
 init = False
 transmissionMsg = ""
 exerciseNo = 0
@@ -124,9 +125,12 @@ if ESP8266_IoT.wifi_state(True):
     ESP8266_IoT.connect_mqtt("broker.hivemq.com", 1883, True)
 
 def on_forever():
-    global calibrated, init
+    global calibrated, init, started, repCounter
     # Index ENUM: LH, RH, W, LL, RL
-    if calibrated == False and Nodes_Register[0] > 0 and Nodes_Register[1] > 0: #and Nodes_Register[2] > 0 and Nodes_Register[3] > 0 and Nodes_Register[4] > 0:
+    if started == True:
+        basic.show_number(repCounter)
+
+    elif calibrated == False and Nodes_Register[0] > 0 and Nodes_Register[1] > 0:# and Nodes_Register[2] > 0 and Nodes_Register[3] > 0 and Nodes_Register[4] > 0:
         calibrated = True
         init = False
 
