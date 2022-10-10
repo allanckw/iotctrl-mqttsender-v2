@@ -86,8 +86,6 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
     }
     
 })
-// if idx != -1 and calibrated == True:         
-//    publishMsg(sn, exerciseNo, repCounter, receivedString, Nodes_Topic_Register[idx])
 radio.onReceivedString(function on_received_string(receivedString: string) {
     
     let idx = -1
@@ -105,8 +103,12 @@ radio.onReceivedString(function on_received_string(receivedString: string) {
         idx = 4
     }
     
+    if (idx != -1 && started == true) {
+        publishMsg(exerciseNo, repCounter, receivedString, Nodes_Topic_Register[idx])
+    }
+    
 })
-function publishMsg(sn2: number, recvExNo2: number, recvRepNo2: number, recvMsg: string, topic2: string) {
+function publishMsg(recvExNo2: number, recvRepNo2: number, recvMsg: string, topic2: string) {
     
     transmissionMsg = "E=" + ("" + recvExNo2) + "&R=" + ("" + recvRepNo2) + "&" + recvMsg
     if (ESP8266_IoT.isMqttBrokerConnected()) {
@@ -118,11 +120,9 @@ function publishMsg(sn2: number, recvExNo2: number, recvRepNo2: number, recvMsg:
     
 }
 
-// basic.show_string(transmissionMsg)
-// basic.show_string(topic2)
+let transmissionMsg = ""
 let started = false
 let init = false
-let transmissionMsg = ""
 let exerciseNo = 0
 let nextRepCount = 0
 let repTotalCount = 0
@@ -132,7 +132,6 @@ let Nodes_Register : number[] = []
 let Nodes_Topic_Register : string[] = []
 radio.setGroup(98)
 let calibrated = false
-// radio.set_transmit_serial_number(True)
 Nodes_Register = [0, 0, 0, 0, 0]
 Nodes_RepCounter_Register = [0, 0, 0, 0, 0]
 Nodes_Topic_Register = ["IoTRHB/LH", "IoTRHB/RH", "IoTRHB/W", "IoTRHB/LL", "IoTRHB/RL"]
@@ -146,12 +145,13 @@ if (ESP8266_IoT.wifiState(true)) {
 basic.forever(function on_forever() {
     
     //  Index ENUM: LH, RH, W, LL, RL
-    if (started == true) {
-        basic.showNumber(repCounter)
-    } else if (calibrated == false && Nodes_Register[0] > 0 && Nodes_Register[1] > 0) {
-        //  and Nodes_Register[2] > 0 and Nodes_Register[3] > 0 and Nodes_Register[4] > 0:
+    if (calibrated == false && Nodes_Register[0] > 0 && Nodes_Register[1] > 0 && Nodes_Register[2] > 0 && Nodes_Register[3] > 0 && Nodes_Register[4] > 0) {
         calibrated = true
         init = false
+    }
+    
+    if (started == true) {
+        basic.showNumber(repCounter)
     } else if (calibrated == true) {
         basic.showString("S")
     } else if (repTotalCount > 0) {

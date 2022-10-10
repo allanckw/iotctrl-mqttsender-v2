@@ -74,7 +74,7 @@ def on_received_value(name, value):
 radio.on_received_value(on_received_value)
 
 def on_received_string(receivedString):
-    global exerciseNo, repCounter
+    global exerciseNo, repCounter, started
     idx = -1 
     sn = radio.received_packet(RadioPacketProperty.SERIAL_NUMBER)
     # Index ENUM: LH, RH, W, LL, RL,
@@ -89,22 +89,21 @@ def on_received_string(receivedString):
     elif sn == Nodes_Register[4]:
         idx = 4
 
-    #if idx != -1 and calibrated == True:         
-    #   publishMsg(sn, exerciseNo, repCounter, receivedString, Nodes_Topic_Register[idx])
+    if idx != -1 and started == True:         
+       publishMsg(exerciseNo, repCounter, receivedString, Nodes_Topic_Register[idx])
                     
 radio.on_received_string(on_received_string)
-def publishMsg(sn2: number, recvExNo2: number, recvRepNo2: number, recvMsg: str, topic2: str):
-    global transmissionMsg
+def publishMsg(recvExNo2: number, recvRepNo2: number, recvMsg: str, topic2: str):
+    global transmissionMsg 
     transmissionMsg = "E=" + str(recvExNo2) + "&R=" + str(recvRepNo2) + "&" + recvMsg
     if ESP8266_IoT.is_mqtt_broker_connected():
         ESP8266_IoT.publish_mqtt_message(transmissionMsg, topic2, ESP8266_IoT.QosList.QOS0)
         pause(1000) #dont spam encounter 021
         basic.show_string("T")
-        #basic.show_string(transmissionMsg)
-        #basic.show_string(topic2)
+
+transmissionMsg = ""
 started = False
 init = False
-transmissionMsg = ""
 exerciseNo = 0
 nextRepCount = 0
 repTotalCount = 0
@@ -114,7 +113,6 @@ Nodes_Register: List[number] = []
 Nodes_Topic_Register: List[str] = []
 radio.set_group(98)
 calibrated = False
-#radio.set_transmit_serial_number(True)
 Nodes_Register = [0, 0, 0, 0, 0]
 Nodes_RepCounter_Register = [0, 0, 0, 0, 0]
 Nodes_Topic_Register = ["IoTRHB/LH", "IoTRHB/RH", "IoTRHB/W", "IoTRHB/LL", "IoTRHB/RL"]
@@ -127,12 +125,13 @@ if ESP8266_IoT.wifi_state(True):
 def on_forever():
     global calibrated, init, started, repCounter
     # Index ENUM: LH, RH, W, LL, RL
-    if started == True:
-        basic.show_number(repCounter)
-
-    elif calibrated == False and Nodes_Register[0] > 0 and Nodes_Register[1] > 0:# and Nodes_Register[2] > 0 and Nodes_Register[3] > 0 and Nodes_Register[4] > 0:
+    
+    if calibrated == False and Nodes_Register[0] > 0 and Nodes_Register[1] > 0 and Nodes_Register[2] > 0 and Nodes_Register[3] > 0 and Nodes_Register[4] > 0:
         calibrated = True
         init = False
+
+    if started == True:
+        basic.show_number(repCounter)
 
     elif calibrated == True:
         basic.show_string("S")
