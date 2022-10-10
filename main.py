@@ -90,18 +90,18 @@ def on_received_string(receivedString):
         idx = 4
 
     if idx != -1 and started == True:         
-       publishMsg(exerciseNo, repCounter, receivedString, Nodes_Topic_Register[idx])
+       publishMsg(exerciseNo, repCounter, receivedString, idx)
                     
 radio.on_received_string(on_received_string)
-def publishMsg(recvExNo2: number, recvRepNo2: number, recvMsg: str, topic2: str):
-    global transmissionMsg 
+def publishMsg(recvExNo2: int, recvRepNo2: int, recvMsg: str, topic2: int):
+    #global transmissionMsg 
     transmissionMsg = "E=" + str(recvExNo2) + "&R=" + str(recvRepNo2) + "&" + recvMsg
     if ESP8266_IoT.is_mqtt_broker_connected():
-        ESP8266_IoT.publish_mqtt_message(transmissionMsg, topic2, ESP8266_IoT.QosList.QOS0)
+        ESP8266_IoT.publish_mqtt_message(transmissionMsg, Nodes_Topic_Register[topic2], ESP8266_IoT.QosList.QOS0)
         pause(1000) #dont spam encounter 021
         basic.show_string("T")
 
-transmissionMsg = ""
+#transmissionMsg = ""
 started = False
 init = False
 exerciseNo = 0
@@ -122,11 +122,12 @@ if ESP8266_IoT.wifi_state(True):
     ESP8266_IoT.set_mqtt(ESP8266_IoT.SchemeList.TCP, "ACSQ", "", "", "")
     ESP8266_IoT.connect_mqtt("broker.hivemq.com", 1883, True)
 
+
 def on_forever():
     global calibrated, init, started, repCounter
     # Index ENUM: LH, RH, W, LL, RL
     
-    if calibrated == False and Nodes_Register[0] > 0 and Nodes_Register[1] > 0 and Nodes_Register[2] > 0 and Nodes_Register[3] > 0 and Nodes_Register[4] > 0:
+    if calibrated == False and Nodes_Register[0] > 0 and Nodes_Register[1] > 0:# and Nodes_Register[2] > 0 and Nodes_Register[3] > 0 and Nodes_Register[4] > 0:
         calibrated = True
         init = False
 

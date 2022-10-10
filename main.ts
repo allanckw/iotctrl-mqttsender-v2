@@ -104,15 +104,15 @@ radio.onReceivedString(function on_received_string(receivedString: string) {
     }
     
     if (idx != -1 && started == true) {
-        publishMsg(exerciseNo, repCounter, receivedString, Nodes_Topic_Register[idx])
+        publishMsg(exerciseNo, repCounter, receivedString, idx)
     }
     
 })
-function publishMsg(recvExNo2: number, recvRepNo2: number, recvMsg: string, topic2: string) {
-    
-    transmissionMsg = "E=" + ("" + recvExNo2) + "&R=" + ("" + recvRepNo2) + "&" + recvMsg
+function publishMsg(recvExNo2: number, recvRepNo2: number, recvMsg: string, topic2: number) {
+    // global transmissionMsg 
+    let transmissionMsg = "E=" + ("" + recvExNo2) + "&R=" + ("" + recvRepNo2) + "&" + recvMsg
     if (ESP8266_IoT.isMqttBrokerConnected()) {
-        ESP8266_IoT.publishMqttMessage(transmissionMsg, topic2, ESP8266_IoT.QosList.Qos0)
+        ESP8266_IoT.publishMqttMessage(transmissionMsg, Nodes_Topic_Register[topic2], ESP8266_IoT.QosList.Qos0)
         pause(1000)
         // dont spam encounter 021
         basic.showString("T")
@@ -120,7 +120,7 @@ function publishMsg(recvExNo2: number, recvRepNo2: number, recvMsg: string, topi
     
 }
 
-let transmissionMsg = ""
+// transmissionMsg = ""
 let started = false
 let init = false
 let exerciseNo = 0
@@ -145,7 +145,8 @@ if (ESP8266_IoT.wifiState(true)) {
 basic.forever(function on_forever() {
     
     //  Index ENUM: LH, RH, W, LL, RL
-    if (calibrated == false && Nodes_Register[0] > 0 && Nodes_Register[1] > 0 && Nodes_Register[2] > 0 && Nodes_Register[3] > 0 && Nodes_Register[4] > 0) {
+    if (calibrated == false && Nodes_Register[0] > 0 && Nodes_Register[1] > 0) {
+        //  and Nodes_Register[2] > 0 and Nodes_Register[3] > 0 and Nodes_Register[4] > 0:
         calibrated = true
         init = false
     }
