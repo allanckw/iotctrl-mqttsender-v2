@@ -9,11 +9,36 @@ input.onButtonPressed(Button.AB, function on_button_pressed_ab() {
     }
     
 })
+radio.onReceivedString(function on_received_string(receivedString: string) {
+    let transmissionMsg: string;
+    
+    idx2 = -1
+    sn2 = radio.receivedPacket(RadioPacketProperty.SerialNumber)
+    //  Index ENUM: LH, RH, W, LL, RL,
+    if (sn2 == Nodes_Register[0]) {
+        idx2 = 0
+    } else if (sn2 == Nodes_Register[1]) {
+        idx2 = 1
+    } else if (sn2 == Nodes_Register[2]) {
+        idx2 = 2
+    } else if (sn2 == Nodes_Register[3]) {
+        idx2 = 3
+    } else if (sn2 == Nodes_Register[4]) {
+        idx2 = 4
+    }
+    
+    Nodes_RepCounter_Register[idx2] = repCounter
+    if (idx2 != -1 && started == true) {
+        transmissionMsg = "E=" + ("" + exerciseNo) + "&R=" + ("" + repCounter) + "&" + receivedString
+        publishMsg(transmissionMsg, idx2)
+    }
+    
+})
 radio.onReceivedValue(function on_received_value(name: string, value: number) {
     let proceedToNextRep: boolean;
     
-    let idx = -1
-    let sn = radio.receivedPacket(RadioPacketProperty.SerialNumber)
+    idx = -1
+    sn = radio.receivedPacket(RadioPacketProperty.SerialNumber)
     //  Index ENUM: LH, RH, W, LL, RL,
     if (name == "Reps") {
         repTotalCount = value
@@ -37,8 +62,8 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
         idx = 4
         init = true
     } else if (name == "RC") {
-        basic.showNumber(repCounter)
-        basic.showNumber(value)
+        //  basic.show_number(repCounter)
+        //  basic.show_number(value)
         if (value <= repTotalCount) {
             idx = -1
             if (sn == Nodes_Register[0]) {
@@ -74,7 +99,7 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
                 
             }
             
-        } else {
+        } else if (exerciseNo > 0) {
             radio.sendValue("End", 1)
         }
         
@@ -86,72 +111,54 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
     }
     
 })
-radio.onReceivedString(function on_received_string(receivedString: string) {
+function publishMsg(recvMsg: string, topic: number) {
     
-    let idx = -1
-    let sn = radio.receivedPacket(RadioPacketProperty.SerialNumber)
-    //  Index ENUM: LH, RH, W, LL, RL,
-    if (sn == Nodes_Register[0]) {
-        idx = 0
-    } else if (sn == Nodes_Register[1]) {
-        idx = 1
-    } else if (sn == Nodes_Register[2]) {
-        idx = 2
-    } else if (sn == Nodes_Register[3]) {
-        idx = 3
-    } else if (sn == Nodes_Register[4]) {
-        idx = 4
-    }
-    
-    if (idx != -1 && started == true) {
-        publishMsg(exerciseNo, repCounter, receivedString, idx)
-    }
-    
-})
-function publishMsg(recvExNo2: number, recvRepNo2: number, recvMsg: string, topic2: number) {
-    // global transmissionMsg 
-    let transmissionMsg = "E=" + ("" + recvExNo2) + "&R=" + ("" + recvRepNo2) + "&" + recvMsg
     if (ESP8266_IoT.isMqttBrokerConnected()) {
-        ESP8266_IoT.publishMqttMessage(transmissionMsg, Nodes_Topic_Register[topic2], ESP8266_IoT.QosList.Qos0)
-        pause(1000)
-        // dont spam encounter 021
-        basic.showString("T")
+        if (sendCount < 30) {
+            sendCount = sendCount + 1
+        } else {
+            ESP8266_IoT.breakMQTT()
+            ESP8266_IoT.connectMQTT("broker.hivemq.com", 1883, true)
+        }
+        
+        ESP8266_IoT.publishMqttMessage(recvMsg, Nodes_Topic_Register[topic], ESP8266_IoT.QosList.Qos0)
     }
     
 }
 
-// transmissionMsg = ""
-let started = false
-let init = false
-let exerciseNo = 0
+let sendCount = 0
 let nextRepCount = 0
-let repTotalCount = 0
+let init = false
+let sn = 0
+let idx = 0
+let exerciseNo = 0
+let sn2 = 0
+let idx2 = 0
 let repCounter = 0
+let started = false
+let repTotalCount = 0
+let calibrated = false
+let Nodes_Topic_Register : string[] = []
 let Nodes_RepCounter_Register : number[] = []
 let Nodes_Register : number[] = []
-let Nodes_Topic_Register : string[] = []
 radio.setGroup(98)
-let calibrated = false
-Nodes_Register = [0, 0, 0, 0, 0]
+Nodes_Register = [-1, -1, -1, -1, -1]
 Nodes_RepCounter_Register = [0, 0, 0, 0, 0]
 Nodes_Topic_Register = ["IoTRHB/LH", "IoTRHB/RH", "IoTRHB/W", "IoTRHB/LL", "IoTRHB/RL"]
 ESP8266_IoT.initWIFI(SerialPin.P8, SerialPin.P12, BaudRate.BaudRate115200)
 ESP8266_IoT.connectWifi("AlanderC", "@landeR$q")
+ESP8266_IoT.setMQTT(ESP8266_IoT.SchemeList.TCP, "clientid-ASQ", "", "", "")
 if (ESP8266_IoT.wifiState(true)) {
-    ESP8266_IoT.setMQTT(ESP8266_IoT.SchemeList.TCP, "ACSQ", "", "", "")
     ESP8266_IoT.connectMQTT("broker.hivemq.com", 1883, true)
 }
 
 basic.forever(function on_forever() {
     
     //  Index ENUM: LH, RH, W, LL, RL
-    if (calibrated == false && Nodes_Register[0] > 0 && Nodes_Register[1] > 0) {
-        //  and Nodes_Register[2] > 0 and Nodes_Register[3] > 0 and Nodes_Register[4] > 0:
+    if (calibrated == false && Nodes_Register[0] >= 0 && Nodes_Register[1] >= 0 && Nodes_Register[2] > 0 && Nodes_Register[3] > 0 && Nodes_Register[4] > 0) {
         calibrated = true
         init = false
-    }
-    
-    if (started == true) {
+    } else if (started == true) {
         basic.showNumber(repCounter)
     } else if (calibrated == true) {
         basic.showString("S")
