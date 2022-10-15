@@ -1,3 +1,11 @@
+function connect() {
+    if (ESP8266_IoT.wifiState(true)) {
+        ESP8266_IoT.setMQTT(ESP8266_IoT.SchemeList.TCP, "ACSQ", "", "", "")
+        ESP8266_IoT.connectMQTT("broker.hivemq.com", 1883, true)
+    }
+    
+}
+
 input.onButtonPressed(Button.AB, function on_button_pressed_ab() {
     
     if (calibrated == true) {
@@ -6,6 +14,7 @@ input.onButtonPressed(Button.AB, function on_button_pressed_ab() {
         repCounter = 1
     } else if (repTotalCount > 0) {
         radio.sendValue("Cali", 1)
+        startCaliTimer = true
     }
     
 })
@@ -29,7 +38,7 @@ radio.onReceivedString(function on_received_string(receivedString: string) {
     
     Nodes_RepCounter_Register[idx2] = repCounter
     if (idx2 != -1 && started == true) {
-        transmissionMsg = "E=" + ("" + exerciseNo) + "&R=" + ("" + repCounter) + "&" + receivedString
+        transmissionMsg = "E=" + convertToText(exerciseNo) + "&R=" + convertToText(repCounter) + "&" + receivedString
         publishMsg(transmissionMsg, idx2)
     }
     
@@ -113,19 +122,22 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
 })
 function publishMsg(recvMsg: string, topic: number) {
     
-    if (ESP8266_IoT.isMqttBrokerConnected()) {
-        if (sendCount < 30) {
-            sendCount = sendCount + 1
-        } else {
-            ESP8266_IoT.breakMQTT()
-            ESP8266_IoT.connectMQTT("broker.hivemq.com", 1883, true)
-        }
-        
-        ESP8266_IoT.publishMqttMessage(recvMsg, Nodes_Topic_Register[topic], ESP8266_IoT.QosList.Qos0)
+    if (sendCount == 0) {
+        sendCount = 1
+        connect()
+    } else if (sendCount > 30) {
+        ESP8266_IoT.breakMQTT()
+        pause(1000)
+        connect()
+    } else {
+        sendCount += 1
     }
     
+    ESP8266_IoT.publishMqttMessage(recvMsg, Nodes_Topic_Register[topic], ESP8266_IoT.QosList.Qos0)
+    pause(1000)
 }
 
+let calibrationTimer = 0
 let sendCount = 0
 let nextRepCount = 0
 let init = false
@@ -134,6 +146,7 @@ let idx = 0
 let exerciseNo = 0
 let sn2 = 0
 let idx2 = 0
+let startCaliTimer = false
 let repCounter = 0
 let started = false
 let repTotalCount = 0
@@ -147,15 +160,26 @@ Nodes_RepCounter_Register = [0, 0, 0, 0, 0]
 Nodes_Topic_Register = ["IoTRHB/LH", "IoTRHB/RH", "IoTRHB/W", "IoTRHB/LL", "IoTRHB/RL"]
 ESP8266_IoT.initWIFI(SerialPin.P8, SerialPin.P12, BaudRate.BaudRate115200)
 ESP8266_IoT.connectWifi("AlanderC", "@landeR$q")
-ESP8266_IoT.setMQTT(ESP8266_IoT.SchemeList.TCP, "clientid-ASQ", "", "", "")
-if (ESP8266_IoT.wifiState(true)) {
-    ESP8266_IoT.connectMQTT("broker.hivemq.com", 1883, true)
-}
-
 basic.forever(function on_forever() {
+    let i: number;
     
     //  Index ENUM: LH, RH, W, LL, RL
-    if (calibrated == false && Nodes_Register[0] >= 0 && Nodes_Register[1] >= 0 && Nodes_Register[2] > 0 && Nodes_Register[3] > 0 && Nodes_Register[4] > 0) {
+    if (startCaliTimer == true && calibrated == false) {
+        pause(1000)
+        if (calibrationTimer < 5) {
+            calibrationTimer = calibrationTimer + 1
+        } else {
+            i = 0
+            while (i <= Nodes_Register.length - 1) {
+                if (Nodes_Register[i] == -1) {
+                    Nodes_Register[i] = 0
+                }
+                
+                i += 1
+            }
+        }
+        
+    } else if (calibrated == false && Nodes_Register[0] >= 0 && Nodes_Register[1] >= 0 && Nodes_Register[2] > 0 && Nodes_Register[3] > 0 && Nodes_Register[4] > 0) {
         calibrated = true
         init = false
     } else if (started == true) {
