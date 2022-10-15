@@ -122,10 +122,8 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
 })
 function publishMsg(recvMsg: string, topic: number) {
     
-    if (sendCount == 0) {
+    if (sendCount > 30) {
         sendCount = 1
-        connect()
-    } else if (sendCount > 30) {
         ESP8266_IoT.breakMQTT()
         pause(1000)
         connect()
@@ -163,6 +161,15 @@ ESP8266_IoT.connectWifi("AlanderC", "@landeR$q")
 basic.forever(function on_forever() {
     let i: number;
     
+    if (sendCount == 0) {
+        sendCount = 1
+        connect()
+    }
+    
+    if (ESP8266_IoT.isMqttBrokerConnected()) {
+        basic.showString("C")
+    }
+    
     //  Index ENUM: LH, RH, W, LL, RL
     if (startCaliTimer == true && calibrated == false) {
         pause(1000)
@@ -177,24 +184,19 @@ basic.forever(function on_forever() {
                 
                 i += 1
             }
+            if (Nodes_Register[0] >= 0 && Nodes_Register[1] >= 0 && Nodes_Register[2] > 0 && Nodes_Register[3] > 0 && Nodes_Register[4] > 0) {
+                calibrated = true
+                init = false
+            }
+            
         }
         
-    } else if (calibrated == false && Nodes_Register[0] >= 0 && Nodes_Register[1] >= 0 && Nodes_Register[2] > 0 && Nodes_Register[3] > 0 && Nodes_Register[4] > 0) {
-        calibrated = true
-        init = false
-    } else if (started == true) {
+    } else if (calibrated == true && started == true) {
         basic.showNumber(repCounter)
-    } else if (calibrated == true) {
+    } else if (calibrated == true && started == false) {
         basic.showString("S")
     } else if (repTotalCount > 0) {
         basic.showString("R")
-    }
-    
-    if (ESP8266_IoT.wifiState(true)) {
-        if (ESP8266_IoT.isMqttBrokerConnected()) {
-            basic.showString("C")
-        }
-        
     }
     
 })
