@@ -1,7 +1,7 @@
 function connect() {
     if (ESP8266_IoT.wifiState(true)) {
         ESP8266_IoT.setMQTT(ESP8266_IoT.SchemeList.TCP, "ACSQ", "", "", "")
-        ESP8266_IoT.connectMQTT("broker.hivemq.com", 1883, true)
+        ESP8266_IoT.connectMQTT("broker.hivemq.com", 1883, false)
     }
     
 }
@@ -122,7 +122,7 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
 })
 function publishMsg(recvMsg: string, topic: number) {
     
-    if (sendCount > 30) {
+    if (sendCount > 15) {
         sendCount = 1
         ESP8266_IoT.breakMQTT()
         pause(1000)
@@ -131,8 +131,14 @@ function publishMsg(recvMsg: string, topic: number) {
         sendCount += 1
     }
     
-    ESP8266_IoT.publishMqttMessage(recvMsg, Nodes_Topic_Register[topic], ESP8266_IoT.QosList.Qos0)
-    pause(1000)
+    basic.showNumber(sendCount)
+    // basic.show_number(topic)
+    if (ESP8266_IoT.isMqttBrokerConnected()) {
+        ESP8266_IoT.publishMqttMessage(recvMsg, Nodes_Topic_Register[topic], ESP8266_IoT.QosList.Qos0)
+        basic.showString("t")
+        pause(3000)
+    }
+    
 }
 
 let calibrationTimer = 0
@@ -140,10 +146,10 @@ let sendCount = 0
 let nextRepCount = 0
 let init = false
 let sn = 0
-let idx = 0
-let exerciseNo = 0
 let sn2 = 0
+let idx = 0
 let idx2 = 0
+let exerciseNo = 0
 let startCaliTimer = false
 let repCounter = 0
 let started = false
@@ -177,12 +183,12 @@ basic.forever(function on_forever() {
         init = false
     } else if (startCaliTimer == true && calibrated == false) {
         pause(1000)
-        if (calibrationTimer < 5) {
+        if (calibrationTimer < 10) {
             calibrationTimer = calibrationTimer + 1
         } else {
             i = 0
             while (i < Nodes_Register.length) {
-                basic.showNumber(Nodes_Register[i])
+                //  basic.show_number(Nodes_Register[i])
                 if (Nodes_Register[i] == -1) {
                     Nodes_Register[i] = 0
                 }
