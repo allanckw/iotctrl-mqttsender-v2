@@ -108,13 +108,10 @@ def publishMsg(recvMsg: str, topic: number):
         connect()
     else:
         sendCount += 1
-
     ESP8266_IoT.publish_mqtt_message(recvMsg,
         Nodes_Topic_Register[topic],
         ESP8266_IoT.QosList.QOS0)
-        
     pause(1000)
-
 calibrationTimer = 0
 sendCount = 0
 nextRepCount = 0
