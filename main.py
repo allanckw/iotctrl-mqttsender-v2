@@ -106,13 +106,10 @@ def publishMsg(recvMsg: str, topic: number):
         connect()
     else:
         sendCount += 1
-
     ESP8266_IoT.publish_mqtt_message(recvMsg,
         Nodes_Topic_Register[topic],
         ESP8266_IoT.QosList.QOS0)
-
     pause(1000)
-
 calibrationTimer = 0
 sendCount = 0
 nextRepCount = 0
@@ -142,38 +139,37 @@ ESP8266_IoT.init_wifi(SerialPin.P8, SerialPin.P12, BaudRate.BAUD_RATE115200)
 ESP8266_IoT.connect_wifi("AlanderC", "@landeR$q")
 
 def on_forever():
-    global calibrationTimer, calibrated, init, sendCount, Nodes_Register
-    
-    if sendCount == 0 :
+    global init, started, repTotalCount, sendCount, startCaliTimer, calibrationTimer, calibrated,  Nodes_Register
+    if sendCount == 0:
         sendCount = 1
         connect()
 
     if ESP8266_IoT.is_mqtt_broker_connected():
         basic.show_string("C")
-
     # Index ENUM: LH, RH, W, LL, RL
-    if startCaliTimer == True and calibrated == False:
+        
+    if calibrated == False and Nodes_Register[0] >= 0 and Nodes_Register[1] >= 0 and Nodes_Register[2] >= 0 and Nodes_Register[3] >= 0 and Nodes_Register[4] >= 0:
+        calibrated = True
+        startCaliTimer = False
+        init = False
+    
+    elif startCaliTimer == True and calibrated == False:
         pause(1000)
         if calibrationTimer < 5:
             calibrationTimer = calibrationTimer + 1
         else:
             i = 0
-            while i <= len(Nodes_Register) - 1:
+            while i < len(Nodes_Register):
+                basic.show_number(Nodes_Register[i])
                 if Nodes_Register[i] == -1:
                     Nodes_Register[i] = 0
-                i += 1
-
-            if Nodes_Register[0] >= 0 and Nodes_Register[1] >= 0 and Nodes_Register[2] > 0 and Nodes_Register[3] > 0 and Nodes_Register[4] > 0:
-                calibrated = True
-                init = False
-                
+                i = i + 1
     elif calibrated == True and started == True:
         basic.show_number(repCounter)
-
+    
     elif calibrated == True and started == False:
         basic.show_string("S")
-
+    
     elif repTotalCount > 0:
         basic.show_string("R")
-    
 basic.forever(on_forever)

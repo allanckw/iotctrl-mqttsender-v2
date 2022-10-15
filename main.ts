@@ -171,24 +171,24 @@ basic.forever(function on_forever() {
     }
     
     //  Index ENUM: LH, RH, W, LL, RL
-    if (startCaliTimer == true && calibrated == false) {
+    if (calibrated == false && Nodes_Register[0] >= 0 && Nodes_Register[1] >= 0 && Nodes_Register[2] >= 0 && Nodes_Register[3] >= 0 && Nodes_Register[4] >= 0) {
+        calibrated = true
+        startCaliTimer = false
+        init = false
+    } else if (startCaliTimer == true && calibrated == false) {
         pause(1000)
         if (calibrationTimer < 5) {
             calibrationTimer = calibrationTimer + 1
         } else {
             i = 0
-            while (i <= Nodes_Register.length - 1) {
+            while (i < Nodes_Register.length) {
+                basic.showNumber(Nodes_Register[i])
                 if (Nodes_Register[i] == -1) {
                     Nodes_Register[i] = 0
                 }
                 
-                i += 1
+                i = i + 1
             }
-            if (Nodes_Register[0] >= 0 && Nodes_Register[1] >= 0 && Nodes_Register[2] > 0 && Nodes_Register[3] > 0 && Nodes_Register[4] > 0) {
-                calibrated = true
-                init = false
-            }
-            
         }
         
     } else if (calibrated == true && started == true) {
