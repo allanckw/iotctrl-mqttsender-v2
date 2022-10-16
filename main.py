@@ -87,9 +87,9 @@ def on_received_value(name, value):
                     proceedToNextRep = False
             # if all nodes says ok to proceed, go to next rep
             if proceedToNextRep == True:
-                repCounter = Nodes_RepCounter_Register[0]
+                repCounter = nextRepCount
                 if nextRepCount <= repTotalCount:
-                    radio.send_value("RepNo", repCounter)
+                    radio.send_value("RepNo", nextRepCount)
         elif exerciseNo > 0:
             radio.send_value("End", 1)
     if init == True:

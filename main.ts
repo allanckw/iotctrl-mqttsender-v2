@@ -101,9 +101,9 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
             }
             //  if all nodes says ok to proceed, go to next rep
             if (proceedToNextRep == true) {
-                repCounter = Nodes_RepCounter_Register[0]
+                repCounter = nextRepCount
                 if (nextRepCount <= repTotalCount) {
-                    radio.sendValue("RepNo", repCounter)
+                    radio.sendValue("RepNo", nextRepCount)
                 }
                 
             }
