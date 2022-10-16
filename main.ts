@@ -43,7 +43,7 @@ radio.onReceivedString(function on_received_string(receivedString: string) {
         k = k + 1
     }
     Nodes_RepCounter_Register[idx2] = repCounter
-    if (idx2 != -1 && started == true) {
+    if (idx2 != -1) {
         transmissionMsg = "E=" + convertToText(exerciseNo) + "&" + receivedString
         publishMsg(transmissionMsg, idx2)
     }
@@ -100,27 +100,25 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
                 j = j + 1
             }
             Nodes_RepCounter_Register[idx] = value
-        } else if (exerciseNo > 0) {
-            // Cannot keep track of Rep Count @ Central Stn, MQTT Transmission Pause Delays
-            // nextRepCount = repCounter + 1
-            // proceedToNextRep = True
-            // for counter in Nodes_RepCounter_Register:
-            //     if proceedToNextRep == True and counter == 0:
-            //  0 meaning no input -> Ignore
-            //         proceedToNextRep = True
-            //     elif proceedToNextRep == True and counter < nextRepCount:
-            //         proceedToNextRep = False
-            //  if all nodes says ok to proceed, go to next rep
-            // if proceedToNextRep == True:
-            //     repCounter = nextRepCount
-            //     if nextRepCount <= repTotalCount:
-            //         radio.send_value("RepNo", nextRepCount)
-            //         basic.show_string("T")
-            radio.sendValue("End", 1)
         }
         
     }
     
+    // Cannot keep track of Rep Count @ Central Stn, MQTT Transmission Pause Delays
+    // nextRepCount = repCounter + 1
+    // proceedToNextRep = True
+    // for counter in Nodes_RepCounter_Register:
+    //     if proceedToNextRep == True and counter == 0:
+    //  0 meaning no input -> Ignore
+    //         proceedToNextRep = True
+    //     elif proceedToNextRep == True and counter < nextRepCount:
+    //         proceedToNextRep = False
+    //  if all nodes says ok to proceed, go to next rep
+    // if proceedToNextRep == True:
+    //     repCounter = nextRepCount
+    //     if nextRepCount <= repTotalCount:
+    //         radio.send_value("RepNo", nextRepCount)
+    //         basic.show_string("T")
     if (init == true) {
         Nodes_Register[idx] = value
         Nodes_RepCounter_Register[idx] = 1
@@ -141,7 +139,7 @@ function publishMsg(recvMsg: string, topic: number) {
     basic.showNumber(sendCount)
     // basic.show_number(topic)
     if (ESP8266_IoT.isMqttBrokerConnected()) {
-        ESP8266_IoT.publishMqttMessage(recvMsg, Nodes_Topic_Register[topic], ESP8266_IoT.QosList.Qos0)
+        ESP8266_IoT.publishMqttMessage(recvMsg, Nodes_Topic_Register[topic], ESP8266_IoT.QosList.Qos1)
         basic.showString("t")
         // Transmit
         pause(2500)

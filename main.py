@@ -35,7 +35,7 @@ def on_received_string(receivedString):
             idx2 = k
         k = k + 1
     Nodes_RepCounter_Register[idx2] = repCounter
-    if idx2 != -1 and started == True:
+    if idx2 != -1:
         transmissionMsg = "E=" + convert_to_text(exerciseNo) + "&" + receivedString
         publishMsg(transmissionMsg, idx2)
 radio.on_received_string(on_received_string)
@@ -102,8 +102,6 @@ def on_received_value(name, value):
             #    if nextRepCount <= repTotalCount:
             #        radio.send_value("RepNo", nextRepCount)
             #        basic.show_string("T")
-        elif exerciseNo > 0:
-            radio.send_value("End", 1)
     if init == True:
         Nodes_Register[idx] = value
         Nodes_RepCounter_Register[idx] = 1
@@ -123,7 +121,7 @@ def publishMsg(recvMsg: str, topic: number):
     if ESP8266_IoT.is_mqtt_broker_connected():
         ESP8266_IoT.publish_mqtt_message(recvMsg,
             Nodes_Topic_Register[topic],
-            ESP8266_IoT.QosList.QOS0)
+            ESP8266_IoT.QosList.QOS1)
         basic.show_string("t") #Transmit
         pause(2500)
 calibrationTimer = 0
