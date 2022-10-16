@@ -19,19 +19,24 @@ def on_received_string(receivedString):
     idx2 = -1
     sn2 = radio.received_packet(RadioPacketProperty.SERIAL_NUMBER)
     # Index ENUM: LH, RH, W, LL, RL,
-    if sn2 == Nodes_Register[0]:
-        idx2 = 0
-    elif sn2 == Nodes_Register[1]:
-        idx2 = 1
-    elif sn2 == Nodes_Register[2]:
-        idx2 = 2
-    elif sn2 == Nodes_Register[3]:
-        idx2 = 3
-    elif sn2 == Nodes_Register[4]:
-        idx2 = 4
+    #if sn2 == Nodes_Register[0]:
+    #    idx2 = 0
+    #elif sn2 == Nodes_Register[1]:
+    #    idx2 = 1
+    #elif sn2 == Nodes_Register[2]:
+    #    idx2 = 2
+    #elif sn2 == Nodes_Register[3]:
+    #    idx2 = 3
+    #elif sn2 == Nodes_Register[4]:
+    #    idx2 = 4
+    k = 0
+    while k < len(Nodes_Register):
+        if Nodes_Register[k] == sn2:
+            idx2 = k
+        k = k + 1
     Nodes_RepCounter_Register[idx2] = repCounter
     if idx2 != -1 and started == True:
-        transmissionMsg = "E=" + convert_to_text(exerciseNo) + "&R=" + convert_to_text(repCounter) + "&" + receivedString
+        transmissionMsg = "E=" + convert_to_text(exerciseNo) + "&" + receivedString
         publishMsg(transmissionMsg, idx2)
 radio.on_received_string(on_received_string)
 
@@ -66,30 +71,37 @@ def on_received_value(name, value):
         # basic.show_number(value)
         if value <= repTotalCount:
             idx = -1
-            if sn == Nodes_Register[0]:
-                idx = 0
-            elif sn == Nodes_Register[1]:
-                idx = 1
-            elif sn == Nodes_Register[2]:
-                idx = 2
-            elif sn == Nodes_Register[3]:
-                idx = 3
-            elif sn == Nodes_Register[4]:
-                idx = 4
+            #if sn == Nodes_Register[0]:
+            #    idx = 0
+            #elif sn == Nodes_Register[1]:
+            #    idx = 1
+            #elif sn == Nodes_Register[2]:
+            #    idx = 2
+            #elif sn == Nodes_Register[3]:
+            #    idx = 3
+            #elif sn == Nodes_Register[4]:
+            #    idx = 4
+            j = 0
+            while j < len(Nodes_Register):
+                if Nodes_Register[j] == sn:
+                    idx = j
+                j = j + 1
             Nodes_RepCounter_Register[idx] = value
-            nextRepCount = repCounter + 1
-            proceedToNextRep = True
-            for counter in Nodes_RepCounter_Register:
-                if proceedToNextRep == True and counter == 0:
+            #Cannot keep track of Rep Count @ Central Stn, MQTT Transmission Pause Delays
+            #nextRepCount = repCounter + 1
+            #proceedToNextRep = True
+            #for counter in Nodes_RepCounter_Register:
+            #    if proceedToNextRep == True and counter == 0:
                     # 0 meaning no input -> Ignore
-                    proceedToNextRep = True
-                elif proceedToNextRep == True and counter < nextRepCount:
-                    proceedToNextRep = False
+            #        proceedToNextRep = True
+            #    elif proceedToNextRep == True and counter < nextRepCount:
+            #        proceedToNextRep = False
             # if all nodes says ok to proceed, go to next rep
-            if proceedToNextRep == True:
-                repCounter = nextRepCount
-                if nextRepCount <= repTotalCount:
-                    radio.send_value("RepNo", nextRepCount)
+            #if proceedToNextRep == True:
+            #    repCounter = nextRepCount
+            #    if nextRepCount <= repTotalCount:
+            #        radio.send_value("RepNo", nextRepCount)
+            #        basic.show_string("T")
         elif exerciseNo > 0:
             radio.send_value("End", 1)
     if init == True:
@@ -112,8 +124,8 @@ def publishMsg(recvMsg: str, topic: number):
         ESP8266_IoT.publish_mqtt_message(recvMsg,
             Nodes_Topic_Register[topic],
             ESP8266_IoT.QosList.QOS0)
-        basic.show_string("t")
-        pause(3000)
+        basic.show_string("t") #Transmit
+        pause(2500)
 calibrationTimer = 0
 sendCount = 0
 nextRepCount = 0
@@ -148,7 +160,7 @@ def on_forever():
         sendCount = 1
         connect()
     if ESP8266_IoT.is_mqtt_broker_connected():
-        basic.show_string("C")
+        basic.show_string("C") #Connected 
     # Index ENUM: LH, RH, W, LL, RL
     if calibrated == False and Nodes_Register[0] >= 0 and Nodes_Register[1] >= 0 and Nodes_Register[2] >= 0 and Nodes_Register[3] >= 0 and Nodes_Register[4] >= 0:
         calibrated = True
@@ -161,14 +173,13 @@ def on_forever():
         else:
             i = 0
             while i < len(Nodes_Register):
-                # basic.show_number(Nodes_Register[i])
                 if Nodes_Register[i] == -1:
                     Nodes_Register[i] = 0
                 i = i + 1
     elif calibrated == True and started == True:
-        basic.show_number(repCounter)
+        basic.show_string("S") #Started 
     elif calibrated == True and started == False:
-        basic.show_string("S")
+        basic.show_string("I") #Initialized  
     elif repTotalCount > 0:
-        basic.show_string("R")
+        basic.show_string("R") #Rdy to Calibrate 
 basic.forever(on_forever)
