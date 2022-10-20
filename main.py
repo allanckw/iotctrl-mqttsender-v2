@@ -33,7 +33,6 @@ radio.on_received_string(on_received_string)
 def on_received_value(name, value):
     global idx, sn, repTotalCount, exerciseNo, init, nextRepCount, repCounter
     idx = -1
-    sn = radio.received_packet(RadioPacketProperty.SERIAL_NUMBER)
     # Index ENUM: LH, RH, W, LL, RL,
     if name == "Reps":
         repTotalCount = value
@@ -58,27 +57,6 @@ def on_received_value(name, value):
         init = True
     elif name == "RC":
         idx = -1
-        j = 0
-        while j < len(Nodes_Register):
-            if Nodes_Register[j] == sn:
-                idx = j
-            j = j + 1
-        Nodes_RepCounter_Register[idx] = value
-
-        msg = "E=" + convert_to_text(exerciseNo) + "&" + name + "=" + convert_to_text(value)
-
-        publishMsg(msg, idx)
-    elif name == "RT":
-        idx = -1
-        j = 0
-        while j < len(Nodes_Register):
-            if Nodes_Register[j] == sn:
-                idx = j
-            j = j + 1
-        
-        msg = "E=" + convert_to_text(exerciseNo) + "&" + name + "=" + convert_to_text(value)
-
-        publishMsg(msg, idx)
 
     if init == True:
         Nodes_Register[idx] = value
@@ -89,22 +67,30 @@ radio.on_received_value(on_received_value)
 def publishMsg(recvMsg: str, topic: number):
     global sendCount
     if sendCount > 15:
-        sendCount = 1
         ESP8266_IoT.break_mqtt()
-        pause(1000)
         connect()
+        pause(500)
+        sendCount = 1
     else:
         sendCount += 1
-    basic.show_number(sendCount)
-    #basic.show_number(topic)
+        pause(500)
+        basic.show_number(sendCount)
+    pause(500)
+    
     if ESP8266_IoT.is_mqtt_broker_connected() == True:
         ESP8266_IoT.publish_mqtt_message(recvMsg,
-            Nodes_Topic_Register[topic],
-            ESP8266_IoT.QosList.QOS1)
+                Nodes_Topic_Register[topic],
+                ESP8266_IoT.QosList.QOS1)
         basic.show_string("t") #Transmit
+    else:
+        while ESP8266_IoT.is_mqtt_broker_connected() == False:
+            if ESP8266_IoT.is_mqtt_broker_connected() == True:
+                    ESP8266_IoT.publish_mqtt_message(recvMsg,
+                            Nodes_Topic_Register[topic],
+                            ESP8266_IoT.QosList.QOS1)
+                    basic.show_string("t") #Transmit
+                    pause(500)
     
-    pause(500)
-        
 calibrationTimer = 0
 sendCount = 0
 nextRepCount = 0

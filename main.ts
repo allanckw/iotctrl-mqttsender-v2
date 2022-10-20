@@ -40,11 +40,8 @@ radio.onReceivedString(function on_received_string(receivedString: string) {
     
 })
 radio.onReceivedValue(function on_received_value(name: string, value: number) {
-    let j: number;
-    let msg: string;
     
     idx = -1
-    sn = radio.receivedPacket(RadioPacketProperty.SerialNumber)
     //  Index ENUM: LH, RH, W, LL, RL,
     if (name == "Reps") {
         repTotalCount = value
@@ -69,29 +66,6 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
         init = true
     } else if (name == "RC") {
         idx = -1
-        j = 0
-        while (j < Nodes_Register.length) {
-            if (Nodes_Register[j] == sn) {
-                idx = j
-            }
-            
-            j = j + 1
-        }
-        Nodes_RepCounter_Register[idx] = value
-        msg = "E=" + convertToText(exerciseNo) + "&" + name + "=" + convertToText(value)
-        publishMsg(msg, idx)
-    } else if (name == "RT") {
-        idx = -1
-        j = 0
-        while (j < Nodes_Register.length) {
-            if (Nodes_Register[j] == sn) {
-                idx = j
-            }
-            
-            j = j + 1
-        }
-        msg = "E=" + convertToText(exerciseNo) + "&" + name + "=" + convertToText(value)
-        publishMsg(msg, idx)
     }
     
     if (init == true) {
@@ -103,23 +77,33 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
 function publishMsg(recvMsg: string, topic: number) {
     
     if (sendCount > 15) {
-        sendCount = 1
         ESP8266_IoT.breakMQTT()
-        pause(1000)
         connect()
+        pause(500)
+        sendCount = 1
     } else {
         sendCount += 1
+        pause(500)
+        basic.showNumber(sendCount)
     }
     
-    basic.showNumber(sendCount)
-    // basic.show_number(topic)
+    pause(500)
     if (ESP8266_IoT.isMqttBrokerConnected() == true) {
         ESP8266_IoT.publishMqttMessage(recvMsg, Nodes_Topic_Register[topic], ESP8266_IoT.QosList.Qos1)
         basic.showString("t")
+    } else {
+        // Transmit
+        while (ESP8266_IoT.isMqttBrokerConnected() == false) {
+            if (ESP8266_IoT.isMqttBrokerConnected() == true) {
+                ESP8266_IoT.publishMqttMessage(recvMsg, Nodes_Topic_Register[topic], ESP8266_IoT.QosList.Qos1)
+                basic.showString("t")
+                // Transmit
+                pause(500)
+            }
+            
+        }
     }
     
-    // Transmit
-    pause(500)
 }
 
 let calibrationTimer = 0
