@@ -162,6 +162,7 @@ basic.forever(function on_forever() {
                 
                 i = i + 1
             }
+            calibrated = true
         }
         
     } else if (calibrated == true && started == true) {

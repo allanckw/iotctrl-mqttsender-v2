@@ -147,6 +147,7 @@ def on_forever():
                 if Nodes_Register[i] == -1:
                     Nodes_Register[i] = 0
                 i = i + 1
+            calibrated = True
     elif calibrated == True and started == True:
         basic.show_string("S") #Started
     elif calibrated == True and started == False:
