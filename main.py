@@ -1,43 +1,66 @@
 def connect():
+    ESP8266_IoT.set_mqtt(ESP8266_IoT.SchemeList.TCP, "ACSQ", "", "", "")
     if ESP8266_IoT.wifi_state(True):
-        ESP8266_IoT.set_mqtt(ESP8266_IoT.SchemeList.TCP, "ACSQ", "", "", "")
         ESP8266_IoT.connect_mqtt("broker.hivemq.com", 1883, False)
 
 def on_button_pressed_ab():
-    global started, repCounter, startCaliTimer
+    global started,  startCaliTimer
     if calibrated == True:
         radio.send_value("Start", 1)
         started = True
-        repCounter = 1
     elif repTotalCount > 0:
         radio.send_value("Cali", 1)
         startCaliTimer = True
 input.on_button_pressed(Button.AB, on_button_pressed_ab)
 
 def on_received_string(receivedString):
-    global idx2, sn2, started
+    global idx2, sn2, Nodes_RepCounter_Register, Nodes_Register
     idx2 = -1
     sn2 = radio.received_packet(RadioPacketProperty.SERIAL_NUMBER)
     # Index ENUM: LH, RH, W, LL, RL,
     k = 0
-    while k < len(Nodes_Register):
+    while k < 5:
         if Nodes_Register[k] == sn2:
             idx2 = k
         k = k + 1
-    Nodes_RepCounter_Register[idx2] = repCounter
+
     if idx2 != -1:
-        transmissionMsg = "E=" + convert_to_text(exerciseNo) + "&" + receivedString
-        publishMsg(transmissionMsg, idx2)
+        transmissionMsg = "E=" + convert_to_text(exerciseNo) + "&RC=" + Nodes_RepCounter_Register[idx2] + "&" + receivedString
+
+        if receivedString.index_of("T=") >= 0 or receivedString.index_of("b") >= 0:
+            publishMsg(transmissionMsg, idx2, ESP8266_IoT.QosList.QOS2)
+        else:
+            publishMsg(transmissionMsg, idx2, ESP8266_IoT.QosList.QOS0)
+
 radio.on_received_string(on_received_string)
 
 def on_received_value(name, value):
-    global idx, sn, repTotalCount, exerciseNo, init, nextRepCount, repCounter
+    global idx, sn, repTotalCount, exerciseNo, init, pulseThreshold, Nodes_RepCounter_Register, Nodes_Register
+    sn = radio.received_packet(RadioPacketProperty.SERIAL_NUMBER)
+    j = 0
     idx = -1
+    init = False
+
+    while j < 5:
+        if Nodes_Register[j] == sn:
+            idx = j
+        j = j + 1
+
     # Index ENUM: LH, RH, W, LL, RL,
-    if name == "Reps":
+    if name == "RepC":
+        Nodes_RepCounter_Register[idx] = value
+        
+    elif name == "Reps":
         repTotalCount = value
+
+    elif name == "PR_Out":
+        if value > pulseThreshold:
+            music.play_tone(880, music.beat(BeatFraction.HALF))
+            transmissionMsg = "E=" + convert_to_text(exerciseNo) + "&RC=" + Nodes_RepCounter_Register[2] + "&PR=" + convert_to_text(value)
+            publishMsg(transmissionMsg, 2, ESP8266_IoT.QosList.QOS0)
+        
     elif name == "PR":
-        pass
+        pulseThreshold = value
     elif name == "Ex":
         exerciseNo = value
     elif name == "LH":
@@ -55,55 +78,39 @@ def on_received_value(name, value):
     elif name == "RL":
         idx = 4
         init = True
-    elif name == "RC":
-        idx = -1
 
     if init == True:
         Nodes_Register[idx] = value
-        Nodes_RepCounter_Register[idx] = 1
+        
 
 radio.on_received_value(on_received_value)
 
-def publishMsg(recvMsg: str, topic: number):
+def publishMsg(recvMsg: str, topic: number, qos : ESP8266_IoT.QosList):
     global sendCount
-    if sendCount > 15:
+    if sendCount > 10:
         ESP8266_IoT.break_mqtt()
-        connect()
-        pause(500)
         sendCount = 1
+        connect()
     else:
         sendCount += 1
-        pause(500)
         basic.show_number(sendCount)
-    pause(500)
-    
+
     if ESP8266_IoT.is_mqtt_broker_connected() == True:
+        basic.show_string("t") #Transmit
         ESP8266_IoT.publish_mqtt_message(recvMsg,
                 Nodes_Topic_Register[topic],
-                ESP8266_IoT.QosList.QOS1)
-        basic.show_string("t") #Transmit
-    else:
-        while ESP8266_IoT.is_mqtt_broker_connected() == False:
-            if ESP8266_IoT.is_mqtt_broker_connected() == True:
-                    ESP8266_IoT.publish_mqtt_message(recvMsg,
-                            Nodes_Topic_Register[topic],
-                            ESP8266_IoT.QosList.QOS1)
-                    basic.show_string("t") #Transmit
-                    pause(500)
-    
+                qos)
 calibrationTimer = 0
 sendCount = 0
-nextRepCount = 0
 init = False
 sn = 0
-
+pulseThreshold = 0
 
 sn2 = 0
 idx = 0
 idx2 = 0
 exerciseNo = 0
 startCaliTimer = False
-repCounter = 0
 started = False
 repTotalCount = 0
 calibrated = False
@@ -120,18 +127,20 @@ Nodes_Topic_Register = ["IoTRHB/LH",
     "IoTRHB/LL",
     "IoTRHB/RL"]
 ESP8266_IoT.init_wifi(SerialPin.P8, SerialPin.P12, BaudRate.BAUD_RATE115200)
-#ESP8266_IoT.connect_wifi("AlanderC", "@landeR$q")
+#ESP8266_IoT.connect_wifi("AlanderC", "@land3R$qq")
 ESP8266_IoT.connect_wifi("AoS_Guest", "9ue$$ing-IoT-Net")
 
 
 def on_forever():
     global sendCount, calibrated, startCaliTimer, init, calibrationTimer
+   
     if sendCount == 0:
         sendCount = 1
         connect()
+
     if ESP8266_IoT.is_mqtt_broker_connected():
         basic.show_string("C") #Connected
-
+        
     # Index ENUM: LH, RH, W, LL, RL
     if calibrated == False and Nodes_Register[0] >= 0 and Nodes_Register[1] >= 0 and Nodes_Register[2] >= 0 and Nodes_Register[3] >= 0 and Nodes_Register[4] >= 0:
         calibrated = True
@@ -143,7 +152,7 @@ def on_forever():
             calibrationTimer = calibrationTimer + 1
         else:
             i = 0
-            while i < len(Nodes_Register):
+            while i < 5:
                 if Nodes_Register[i] == -1:
                     Nodes_Register[i] = 0
                 i = i + 1
@@ -151,9 +160,7 @@ def on_forever():
     elif calibrated == True and started == True:
         basic.show_string("S") #Started
     elif calibrated == True and started == False:
-
         basic.show_string("I") #Initialized
     elif repTotalCount > 0:
-
         basic.show_string("R") #Rdy to Calibrate
 basic.forever(on_forever)
