@@ -18,6 +18,7 @@ input.onButtonPressed(Button.AB, function on_button_pressed_ab() {
     
 })
 radio.onReceivedString(function on_received_string(receivedString: string) {
+    let elapsedTime: string;
     let transmissionMsg: string;
     
     idx2 = -1
@@ -32,7 +33,8 @@ radio.onReceivedString(function on_received_string(receivedString: string) {
         k = k + 1
     }
     if (idx2 != -1) {
-        transmissionMsg = "E=" + convertToText(exerciseNo) + "&RC=" + Nodes_RepCounter_Register[idx2] + "&" + receivedString
+        elapsedTime = convertToText(Math.round(radio.receivedPacket(RadioPacketProperty.Time) / 1000))
+        transmissionMsg = "E=" + convertToText(exerciseNo) + "&RT=" + convertToText(elapsedTime) + "&RC=" + Nodes_RepCounter_Register[idx2] + "&" + receivedString
         if (receivedString.indexOf("T=") >= 0 || receivedString.indexOf("b") >= 0) {
             publishMsg(transmissionMsg, idx2, ESP8266_IoT.QosList.Qos2)
         } else {
@@ -64,10 +66,10 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
     } else if (name == "PR_Out") {
         if (value > pulseThreshold) {
             music.playTone(880, music.beat(BeatFraction.Half))
-            transmissionMsg = "E=" + convertToText(exerciseNo) + "&RC=" + Nodes_RepCounter_Register[2] + "&PR=" + convertToText(value)
-            publishMsg(transmissionMsg, 2, ESP8266_IoT.QosList.Qos0)
         }
         
+        transmissionMsg = "E=" + convertToText(exerciseNo) + "&RC=" + Nodes_RepCounter_Register[2] + "&PR=" + convertToText(value)
+        publishMsg(transmissionMsg, 2, ESP8266_IoT.QosList.Qos0)
     } else if (name == "PR") {
         pulseThreshold = value
     } else if (name == "Ex") {
@@ -134,8 +136,8 @@ Nodes_Register = [-1, -1, -1, -1, -1]
 Nodes_RepCounter_Register = [0, 0, 0, 0, 0]
 Nodes_Topic_Register = ["IoTRHB/LH", "IoTRHB/RH", "IoTRHB/W", "IoTRHB/LL", "IoTRHB/RL"]
 ESP8266_IoT.initWIFI(SerialPin.P8, SerialPin.P12, BaudRate.BaudRate115200)
-// ESP8266_IoT.connect_wifi("AlanderC", "@land3R$qq")
-ESP8266_IoT.connectWifi("AoS_Guest", "9ue$$ing-IoT-Net")
+ESP8266_IoT.connectWifi("AlanderC", "@land3R$qq")
+// ESP8266_IoT.connect_wifi("AoS_Guest", "9ue$$ing-IoT-Net")
 // Rdy to Calibrate
 basic.forever(function on_forever() {
     let i: number;

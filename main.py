@@ -13,7 +13,7 @@ def on_button_pressed_ab():
         startCaliTimer = True
 input.on_button_pressed(Button.AB, on_button_pressed_ab)
 
-def on_received_string(receivedString):
+def on_received_string(receivedString): 
     global idx2, sn2, Nodes_RepCounter_Register, Nodes_Register
     idx2 = -1
     sn2 = radio.received_packet(RadioPacketProperty.SERIAL_NUMBER)
@@ -25,7 +25,8 @@ def on_received_string(receivedString):
         k = k + 1
 
     if idx2 != -1:
-        transmissionMsg = "E=" + convert_to_text(exerciseNo) + "&RC=" + Nodes_RepCounter_Register[idx2] + "&" + receivedString
+        elapsedTime = convert_to_text(Math.round(radio.received_packet(RadioPacketProperty.TIME) / 1000))
+        transmissionMsg = "E=" + convert_to_text(exerciseNo) + "&RT=" + convert_to_text(elapsedTime)  + "&RC=" + Nodes_RepCounter_Register[idx2] + "&" + receivedString
 
         if receivedString.index_of("T=") >= 0 or receivedString.index_of("b") >= 0:
             publishMsg(transmissionMsg, idx2, ESP8266_IoT.QosList.QOS2)
@@ -56,8 +57,9 @@ def on_received_value(name, value):
     elif name == "PR_Out":
         if value > pulseThreshold:
             music.play_tone(880, music.beat(BeatFraction.HALF))
-            transmissionMsg = "E=" + convert_to_text(exerciseNo) + "&RC=" + Nodes_RepCounter_Register[2] + "&PR=" + convert_to_text(value)
-            publishMsg(transmissionMsg, 2, ESP8266_IoT.QosList.QOS0)
+        
+        transmissionMsg = "E=" + convert_to_text(exerciseNo) + "&RC=" + Nodes_RepCounter_Register[2] + "&PR=" + convert_to_text(value)
+        publishMsg(transmissionMsg, 2, ESP8266_IoT.QosList.QOS0)
         
     elif name == "PR":
         pulseThreshold = value
@@ -127,8 +129,8 @@ Nodes_Topic_Register = ["IoTRHB/LH",
     "IoTRHB/LL",
     "IoTRHB/RL"]
 ESP8266_IoT.init_wifi(SerialPin.P8, SerialPin.P12, BaudRate.BAUD_RATE115200)
-#ESP8266_IoT.connect_wifi("AlanderC", "@land3R$qq")
-ESP8266_IoT.connect_wifi("AoS_Guest", "9ue$$ing-IoT-Net")
+ESP8266_IoT.connect_wifi("AlanderC", "@land3R$qq")
+#ESP8266_IoT.connect_wifi("AoS_Guest", "9ue$$ing-IoT-Net")
 
 
 def on_forever():
