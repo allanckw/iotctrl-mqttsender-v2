@@ -50,7 +50,6 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
     sn = radio.receivedPacket(RadioPacketProperty.SerialNumber)
     let j = 0
     idx = -1
-    init = false
     while (j < 5) {
         if (Nodes_Register[j] == sn) {
             idx = j
@@ -70,28 +69,26 @@ radio.onReceivedValue(function on_received_value(name: string, value: number) {
         
         transmissionMsg = "E=" + convertToText(exerciseNo) + "&RC=" + Nodes_RepCounter_Register[2] + "&PR=" + convertToText(value)
         publishMsg(transmissionMsg, 2, ESP8266_IoT.QosList.Qos0)
+    } else if (name == "Fall") {
+        transmissionMsg = "E=" + convertToText(exerciseNo) + "&RC=" + Nodes_RepCounter_Register[2] + "&Fall=1"
+        publishMsg(transmissionMsg, 2, ESP8266_IoT.QosList.Qos2)
     } else if (name == "PR") {
         pulseThreshold = value
     } else if (name == "Ex") {
         exerciseNo = value
     } else if (name == "LH") {
         idx = 0
-        init = true
     } else if (name == "RH") {
         idx = 1
-        init = true
     } else if (name == "W") {
         idx = 2
-        init = true
     } else if (name == "LL") {
         idx = 3
-        init = true
     } else if (name == "RL") {
         idx = 4
-        init = true
     }
     
-    if (init == true) {
+    if (idx >= 0) {
         Nodes_Register[idx] = value
     }
     
@@ -104,9 +101,9 @@ function publishMsg(recvMsg: string, topic: number, qos: number) {
         connect()
     } else {
         sendCount += 1
-        basic.showNumber(sendCount)
     }
     
+    // basic.show_number(sendCount)
     if (ESP8266_IoT.isMqttBrokerConnected() == true) {
         basic.showString("t")
         // Transmit
@@ -117,7 +114,6 @@ function publishMsg(recvMsg: string, topic: number, qos: number) {
 
 let calibrationTimer = 0
 let sendCount = 0
-let init = false
 let sn = 0
 let pulseThreshold = 0
 let sn2 = 0
@@ -156,7 +152,6 @@ basic.forever(function on_forever() {
     if (calibrated == false && Nodes_Register[0] >= 0 && Nodes_Register[1] >= 0 && Nodes_Register[2] >= 0 && Nodes_Register[3] >= 0 && Nodes_Register[4] >= 0) {
         calibrated = true
         startCaliTimer = false
-        init = false
     } else if (startCaliTimer == true && calibrated == false) {
         pause(1000)
         if (calibrationTimer < 10) {
