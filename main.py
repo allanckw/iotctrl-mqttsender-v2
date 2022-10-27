@@ -102,7 +102,7 @@ def publishMsg(recvMsg: str, topic: number, qos : ESP8266_IoT.QosList):
         #basic.show_number(sendCount)
 
     if ESP8266_IoT.is_mqtt_broker_connected() == True:
-        basic.show_string("t") #Transmit
+        basic.show_string("tx") #Transmit
         ESP8266_IoT.publish_mqtt_message(recvMsg,
                 Nodes_Topic_Register[topic],
                 qos)
@@ -110,7 +110,6 @@ calibrationTimer = 0
 sendCount = 0
 sn = 0
 pulseThreshold = 0
-
 sn2 = 0
 idx = 0
 idx2 = 0

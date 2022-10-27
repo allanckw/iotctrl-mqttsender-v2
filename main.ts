@@ -105,7 +105,7 @@ function publishMsg(recvMsg: string, topic: number, qos: number) {
     
     // basic.show_number(sendCount)
     if (ESP8266_IoT.isMqttBrokerConnected() == true) {
-        basic.showString("t")
+        basic.showString("tx")
         // Transmit
         ESP8266_IoT.publishMqttMessage(recvMsg, Nodes_Topic_Register[topic], qos)
     }
