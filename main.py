@@ -13,7 +13,7 @@ def on_button_pressed_ab():
         startCaliTimer = True
 input.on_button_pressed(Button.AB, on_button_pressed_ab)
 
-def on_received_string(receivedString): 
+def on_received_string(receivedString):
     global idx2, sn2, Nodes_RepCounter_Register, Nodes_Register
     idx2 = -1
     sn2 = radio.received_packet(RadioPacketProperty.SERIAL_NUMBER)
@@ -23,7 +23,7 @@ def on_received_string(receivedString):
         if Nodes_Register[k] == sn2:
             idx2 = k
         k = k + 1
-
+    #basic.show_number(idx2)
     if idx2 != -1:
         elapsedTime = convert_to_text(Math.round(radio.received_packet(RadioPacketProperty.TIME) / 1000))
         transmissionMsg = "E=" + convert_to_text(exerciseNo) + "&RT=" + convert_to_text(elapsedTime)  + "&RC=" + Nodes_RepCounter_Register[idx2] + "&" + receivedString
@@ -36,10 +36,11 @@ def on_received_string(receivedString):
 radio.on_received_string(on_received_string)
 
 def on_received_value(name, value):
-    global idx, sn, repTotalCount, exerciseNo, pulseThreshold, Nodes_RepCounter_Register, Nodes_Register
+    global init, idx, sn, repTotalCount, exerciseNo, pulseThreshold, Nodes_RepCounter_Register, Nodes_Register
     sn = radio.received_packet(RadioPacketProperty.SERIAL_NUMBER)
     j = 0
     idx = -1
+    init = False
 
     while j < 5:
         if Nodes_Register[j] == sn:
@@ -61,7 +62,7 @@ def on_received_value(name, value):
         publishMsg(transmissionMsg, 2, ESP8266_IoT.QosList.QOS0)
 
     elif name == "Fall":
-        transmissionMsg = "E=" + convert_to_text(exerciseNo) + "&RC=" + Nodes_RepCounter_Register[2] + "&Fall=1"
+        transmissionMsg = "E=" + convert_to_text(exerciseNo) + "&RC=" + Nodes_RepCounter_Register[idx] + "&Fall=1"
         publishMsg(transmissionMsg, 2, ESP8266_IoT.QosList.QOS2)
 
     elif name == "PR":
@@ -72,20 +73,21 @@ def on_received_value(name, value):
 
     elif name == "LH":
         idx = 0
-
+        init = True
     elif name == "RH":
         idx = 1
-
+        init = True
     elif name == "W":
         idx = 2
-
+        init = True
     elif name == "LL":
-        idx = 3
-        
+        idx = 3 
+        init = True    
     elif name == "RL":
         idx = 4
+        init = True
 
-    if idx >= 0:
+    if init == True:
         Nodes_Register[idx] = value
         
 
@@ -102,10 +104,12 @@ def publishMsg(recvMsg: str, topic: number, qos : ESP8266_IoT.QosList):
         #basic.show_number(sendCount)
 
     if ESP8266_IoT.is_mqtt_broker_connected() == True:
-        basic.show_string("tx") #Transmit
+        #basic.show_string("tx") #Transmit
         ESP8266_IoT.publish_mqtt_message(recvMsg,
                 Nodes_Topic_Register[topic],
                 qos)
+
+init = False
 calibrationTimer = 0
 sendCount = 0
 sn = 0
@@ -141,10 +145,10 @@ def on_forever():
     if sendCount == 0:
         sendCount = 1
         connect()
-        
+        init = False
+
     if ESP8266_IoT.is_mqtt_broker_connected():
         basic.show_string("C") #Connected
-    
 
     # Index ENUM: LH, RH, W, LL, RL
     if calibrated == False and Nodes_Register[0] >= 0 and Nodes_Register[1] >= 0 and Nodes_Register[2] >= 0 and Nodes_Register[3] >= 0 and Nodes_Register[4] >= 0:
